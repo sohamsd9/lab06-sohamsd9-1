@@ -64,3 +64,31 @@ os.makedirs("_output", exist_ok=True)
 data.to_csv("_output/lightcast_cleaned.csv", index=False)
 
 print("Saved to: _output/lightcast_cleaned.csv")
+
+
+# %%
+import matplotlib.pyplot as plt
+
+# 1) Group by STATE_NAME and count jobs
+state_counts = (
+    data.groupby("STATE_NAME")
+        .size()
+        .sort_values(ascending=False)
+)
+
+# (Optional) limit to top N states so the chart is readable
+top_n = 20
+state_counts_plot = state_counts.head(top_n)
+
+# 2) Plot using Matplotlib (no fixed colors)
+plt.figure(figsize=(12, 6))
+plt.bar(state_counts_plot.index.astype(str), state_counts_plot.values)
+plt.xticks(rotation=75, ha="right")
+plt.xlabel("State")
+plt.ylabel("Number of Jobs")
+plt.title(f"Job Count by State (Top {top_n})")
+plt.tight_layout()
+plt.savefig("_output/q1_job_count_by_state.png", dpi=300, bbox_inches="tight")
+plt.show()
+
+# %%
