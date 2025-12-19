@@ -206,3 +206,35 @@ plt.tight_layout()
 plt.savefig("_output/q4_average_salary_by_industry.png", dpi=300, bbox_inches="tight")
 plt.show()
 
+# %%
+from collections import Counter
+
+# 1) Extract individual skill names (comma-separated), clean whitespace
+skills_list = (
+    data["SKILLS_NAME"]
+    .dropna()
+    .astype(str)
+    .str.replace('"', "", regex=False)   # remove any stray quotes
+    .str.split(",")
+    .explode()
+    .str.strip()
+)
+
+# remove blanks
+skills_list = skills_list[skills_list.ne("") & skills_list.ne("nan")]
+
+# 2) Count occurrences + top 10
+top10 = Counter(skills_list).most_common(10)
+
+skill_df = pd.DataFrame(top10, columns=["Skill", "Count"]).sort_values("Count", ascending=True)
+
+# 3) Plot (horizontal bar chart)
+plt.figure(figsize=(10, 5))
+plt.barh(skill_df["Skill"], skill_df["Count"])
+plt.title("Top 10 Most Frequently Mentioned Skills")
+plt.xlabel("Frequency")
+plt.ylabel("Skill")
+plt.tight_layout()
+plt.savefig("_output/q5_top10_most_frequently_mentioned_skills.png", dpi=300, bbox_inches="tight")
+plt.show()
+
