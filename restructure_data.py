@@ -120,3 +120,55 @@ plt.tight_layout()
 plt.savefig("_output/q2_job_count_by_state_retail_trade.png", dpi=300, bbox_inches="tight")
 plt.show()
 
+# %%
+# --- Ensure POSTED is datetime ---
+data["POSTED"] = pd.to_datetime(data["POSTED"], errors="coerce")
+
+#   3 companies 
+companies = ["Deloitte", "Accenture", "PricewaterhouseCoopers"] 
+
+# --- Target months ---
+may_2024 = pd.Period("2024-05", freq="M")
+sept_2024 = pd.Period("2024-09", freq="M")
+
+# 1) Filter for those companies
+dfc = data[data["COMPANY_NAME"].isin(companies)].copy()
+
+# 2) Create month period from POSTED
+dfc["POSTED_MONTH"] = dfc["POSTED"].dt.to_period("M")
+
+# 3) Count job postings by company and month
+monthly_counts = (
+    dfc.groupby(["COMPANY_NAME", "POSTED_MONTH"])
+       .size()
+       .reset_index(name="job_count")
+)
+
+# 4) Pull May and Sept counts
+may_counts = monthly_counts[monthly_counts["POSTED_MONTH"] == may_2024][["COMPANY_NAME", "job_count"]].rename(columns={"job_count": "count_may"})
+sept_counts = monthly_counts[monthly_counts["POSTED_MONTH"] == sept_2024][["COMPANY_NAME", "job_count"]].rename(columns={"job_count": "count_sept"})
+
+merged = (pd.merge(may_counts, sept_counts, on="COMPANY_NAME", how="outer")
+            .fillna({"count_may": 0, "count_sept": 0}))
+
+# 5) Percent change (avoid divide-by-zero)
+merged["percent_change"] = merged.apply(
+    lambda r: ((r["count_sept"] - r["count_may"]) / r["count_may"] * 100) if r["count_may"] != 0 else None,
+    axis=1
+)
+
+print(merged)
+
+# 6) Plot percent change bar chart (drops companies with undefined % change)
+plot_df = merged.dropna(subset=["percent_change"]).sort_values("percent_change", ascending=False)
+
+plt.figure(figsize=(10, 5))
+plt.bar(plot_df["COMPANY_NAME"].astype(str), plot_df["percent_change"].values)
+plt.xticks(rotation=30, ha="right")
+plt.xlabel("Company")
+plt.ylabel("Percent Change in Job Postings (%)")
+plt.title("Percent Change in Job Postings (May 2024 → Sept 2024)")
+plt.tight_layout()
+plt.savefig("_output/q3_percentage_change_job_postings.png", dpi=300, bbox_inches="tight")
+plt.show()
+
