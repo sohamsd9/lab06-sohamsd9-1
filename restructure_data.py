@@ -172,3 +172,37 @@ plt.tight_layout()
 plt.savefig("_output/q3_percentage_change_job_postings.png", dpi=300, bbox_inches="tight")
 plt.show()
 
+# %%
+# Make sure salary columns are numeric (in case not already)
+for col in ["SALARY_FROM", "SALARY_TO"]:
+    if col in data.columns:
+        data[col] = pd.to_numeric(data[col], errors="coerce")
+
+# 1) Group by industry and compute average salary_from / salary_to
+industry_salary = (
+    data.dropna(subset=["NAICS2_NAME"])
+        .groupby("NAICS2_NAME")[["SALARY_FROM", "SALARY_TO"]]
+        .mean()
+)
+
+# (Optional) drop industries with both averages missing/zero
+industry_salary = industry_salary.dropna(how="all")
+industry_salary = industry_salary[(industry_salary["SALARY_FROM"].fillna(0) > 0) | (industry_salary["SALARY_TO"].fillna(0) > 0)]
+
+# Create a single "avg salary" to plot (midpoint of avg range)
+industry_salary["AVG_SALARY"] = industry_salary[["SALARY_FROM", "SALARY_TO"]].mean(axis=1)
+
+# Keep top N industries by avg salary for readability
+top_n = 15
+plot_df = industry_salary.sort_values("AVG_SALARY", ascending=True).tail(top_n)
+
+# 2) Plot horizontal bar chart (no fixed colors)
+plt.figure(figsize=(12, 7))
+plt.barh(plot_df.index.astype(str), plot_df["AVG_SALARY"].values)
+plt.xlabel("Average Salary (midpoint of SALARY_FROM and SALARY_TO)")
+plt.ylabel("Industry (NAICS2_NAME)")
+plt.title(f"Average Salary by Industry (Top {top_n})")
+plt.tight_layout()
+plt.savefig("_output/q4_average_salary_by_industry.png", dpi=300, bbox_inches="tight")
+plt.show()
+
